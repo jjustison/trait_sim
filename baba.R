@@ -1,35 +1,38 @@
-library(treeducken)
-library(SiPhyNetwork)
+parent_trees<-read.tree('./parent_trees.net')
 
-##From : http://blog.phytools.org/2012/01/function-to-get-descendant-node-numbers.html
-getDescendants<-function(tree,node,curr=NULL){
-  if(is.null(curr)) curr<-vector()
-  daughters<-tree$edge[which(tree$edge[,1]==node),2]
-  curr<-c(curr,daughters)
-  w<-which(daughters>=length(tree$tip))
-  if(length(w)>0) for(i in 1:length(w))
-    curr<-getDescendants(tree,daughters[w[i]],curr)
-  return(curr)
-}
+gene_trees<-list()
+for(pt_ind in 1:length(parent_trees)){
+  pt<-parent_trees[[pt_ind]]
+  pt<-collapse.singles(pt)
 
-
-parent_trees<-read.tree('./8_tree1/parent_trees.net')
-parent_trees[[1]]
-tree<-parent_trees[[1]]
-
-ntips<-8
-get_hyb_nodes<-function(tree,ntips){
-  hyb_nodes<-which(tree$node.label!="")+ntips
-  kept<-list()
-  for(nd in hyb_nodes){
-    descs<-getDescendants(tree=tree,node=nd)
-    tips<-descs[descs<=ntips]
-    if(length(tips)>1){
-      kept<-c(kept,list(list(nd,tips)))
+  num_genes<-gene_nomial[pt_ind]
+  leaf_gammas<-pt_leaf_gammas[[pt_ind]]
+  
+  completed_sims<-0
+  while(completed_sims<num_genes){
+    gene_tree<-generate_gene_tree_msc(
+      pt,population_sizes = pop) ##All other parameters are assumed to be 1, what we want
+    
+    prob_sample<-1
+    
+    for(l_gamma in leaf_gammas){
+      coal_time<-5-gene_tree$gene_clade_times[getMRCA(gene_tree$tree,l_gamma[[2]])]
+      if(coal_time>hyb_time){
+        prob_sample<-prob_sample*l_gamma[[1]]
+      }
     }
+    if(prob_sample!=1 & (runif(1)>=prob_sample)){ ##sample fails
+      next
+    }
+    gene_trees<-c(gene_trees,list(gene_tree$tree))
+    completed_sims<-completed_sims+1
   }
-  return(kept)
 }
 
+gene_freqs<-rep(1/length(gene_trees))
+gene_trees<-c(gene_trees,gene_freqs)
+hib_vcv<-trees_to_vcv(tree_list = gene_trees)
+matched_tips<- match(tipnames,colnames(hib_vcv)) ##match tip name ordering to the ones given
+hib_vcv<-hib_vcv[matched_tips,matched_tips]
 
 
