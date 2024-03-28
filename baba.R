@@ -29,8 +29,8 @@ for(pt_ind in 1:length(parent_trees)){
   }
 }
 
-gene_freqs<-rep(1/length(gene_trees))
-gene_trees<-c(gene_trees,gene_freqs)
+gene_freqs<-rep(1/ngenes,ngenes)
+gene_trees<-c(gene_trees,list(gene_freqs))
 hib_vcv<-trees_to_vcv(tree_list = gene_trees)
 matched_tips<- match(tipnames,colnames(hib_vcv)) ##match tip name ordering to the ones given
 hib_vcv<-hib_vcv[matched_tips,matched_tips]
