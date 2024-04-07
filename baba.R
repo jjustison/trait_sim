@@ -1,5 +1,5 @@
 parent_trees<-read.tree('./parent_trees.net')
-
+set.seed(R_seed)## set seed for reproducibility. 'R_seed' is imported in the hib_analysis() function 
 gene_trees<-list()
 for(pt_ind in 1:length(parent_trees)){
   pt<-parent_trees[[pt_ind]]

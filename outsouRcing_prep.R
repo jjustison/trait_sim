@@ -2,6 +2,8 @@ library(castor)
 library(SiPhyNetwork)
 library(ape)
 library(seastaR)
+library(vcvComp)
+library(partitions)
 
 ##From : http://blog.phytools.org/2012/01/function-to-get-descendant-node-numbers.html
 getDescendants<-function(tree,node,curr=NULL){
