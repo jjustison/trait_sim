@@ -28,10 +28,8 @@ using RCall
 function obs_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
 
 
-    cd(folder_path)
-
-    include("../common_net.jl")
-    include("../../common_pars.jl")
+    include(folder_path*"/common_net.jl")
+    include("./common_pars.jl")
 
     Random.seed!(starter_sd)
 
@@ -39,7 +37,7 @@ function obs_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
     no_pops=25
     pop_sizes=exp.(collect(range(log(0.001),log(1000),length=no_pops))) ### generate population sizes to range "evenly" from 0 to Inf
     #ngene_sizes = reduce(vcat,[1,(10:10:250)])
-    ngene_sizes = 1:25
+    ngene_sizes = 1:50
     nreps = 10000
 
 
@@ -52,7 +50,7 @@ function obs_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         ngenes = repeat(ngene_sizes          , outer=length(pop_sizes)),
         seed   = rand!(zeros(UInt128,length(pop_sizes)*length(ngene_sizes))) 
         )
-    CSV.write("pars.csv",pars) 
+    CSV.write(folder_path*"/obs/pars.csv",pars) 
 
 
     ##Bastide model
@@ -145,9 +143,9 @@ function obs_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         end
         ##Save the trait data
         data_tag = string(i)*"_"*string(j)
-        CSV.write("fits/fit_ests_"*data_tag*".csv",dat_ests)
+        CSV.write(folder_path*"/obs/fits/fit_ests_"*data_tag*".csv",dat_ests)
     end
-
+    GC.gc()
 end
 
 
@@ -173,10 +171,9 @@ end
 
 function bas_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
 
-    cd(folder_path)
 
-    include("../common_net.jl")
-    include("../../common_pars.jl")
+    include(folder_path*"/common_net.jl")
+    include("./common_pars.jl")
 
     Random.seed!(starter_sd)
 
@@ -193,7 +190,7 @@ function bas_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         gammas = gammas,
         seed   = rand!(zeros(UInt128,no_pops))
     )
-    CSV.write("pars.csv",pars) 
+    CSV.write(folder_path*"/bas/pars.csv",pars) 
 
     ##Used if continuing a partially completed simulation set
     isnothing(rw_end) && (pars_iter=eachrow(pars)[rw_start:end])
@@ -265,9 +262,9 @@ function bas_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         end
         ##Save the trait data
         data_tag = string(i)
-        CSV.write("fits/fit_ests_"*data_tag*".csv",dat_ests)
+        CSV.write(folder_path*"/bas/fits/fit_ests_"*data_tag*".csv",dat_ests)
     end
-
+    GC.gc()
 end
 
 ##################################################
@@ -286,8 +283,8 @@ end
 
 function exp_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
     cd(folder_path)
-    include("../common_net.jl")
-    include("../../common_pars.jl")
+    include(folder_path*"/common_net.jl")
+    include("./common_pars.jl")
     Random.seed!(starter_sd)
 
     ##These are the things that get iterated over 
@@ -306,7 +303,7 @@ function exp_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         seed   = rand!(zeros(UInt128,no_pops*no_gammas)) 
         )
 
-    CSV.write("pars.csv",pars) 
+    CSV.write(folder_path*"/exp/pars.csv",pars) 
 
     isnothing(rw_end) && (pars_iter=eachrow(pars)[rw_start:end])
     (!isnothing(rw_end)) && (pars_iter=eachrow(pars)[rw_start:rw_end])
@@ -386,9 +383,9 @@ function exp_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         end
         ##Save the trait data
         data_tag = string(i)*"_"*string(j)
-        CSV.write("fits/fit_ests_"*data_tag*".csv",dat_ests)
+        CSV.write(folder_path*"/expfits/fit_ests_"*data_tag*".csv",dat_ests)
     end
-
+    GC.gc()
 end
 
 
@@ -409,10 +406,8 @@ end
 
 function hib_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
 
-    cd(folder_path)
-
-    include("../common_net.jl")
-    include("../../common_pars.jl")
+    include(folder_path*"/common_net.jl")
+    include("./common_pars.jl")
 
     Random.seed!(starter_sd)
 
@@ -420,7 +415,7 @@ function hib_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
     no_pops=25
     pop_sizes=exp.(collect(range(log(0.001),log(1000),length=no_pops))) ### generate population sizes to range "evenly" from 0 to Inf
     #ngene_sizes = reduce(vcat,[1,(10:10:250)])
-    ngene_sizes = 1:25
+    ngene_sizes = 1:50
     nreps = 10000
     
     pars=DataFrame(
@@ -430,7 +425,7 @@ function hib_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         ngenes = repeat(ngene_sizes          , outer=length(pop_sizes)),
         seed   = rand!(zeros(UInt128,length(pop_sizes)*length(ngene_sizes))) 
         )
-    CSV.write("pars.csv",pars) 
+    CSV.write(folder_path*"/hib/pars.csv",pars) 
 
 
     ##Bastide model
@@ -525,9 +520,9 @@ function hib_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         end
         ##Save the trait data
         data_tag = string(i)*"_"*string(j)
-        CSV.write("fits/fit_ests_"*data_tag*".csv",dat_ests)
+        CSV.write(folder_path*"/hib/fits/fit_ests_"*data_tag*".csv",dat_ests)
     end
-
+    GC.gc()
 end
 
 
@@ -544,11 +539,8 @@ end
 function obs_dists(folder_path,starter_sd,rw_start=1,rw_end=nothing)
 
 
-
-    cd(folder_path)
-
-    include("../common_net.jl")
-    include("../../common_pars.jl")
+    include(folder_path*"/common_net.jl")
+    include("./common_pars.jl")
 
     Random.seed!(starter_sd)
 
@@ -569,9 +561,6 @@ function obs_dists(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         ngenes = repeat(ngene_sizes          , outer=length(pop_sizes)),
         seed   = rand!(zeros(UInt128,length(pop_sizes)*length(ngene_sizes))) 
         )
-    CSV.write("pars.csv",pars) 
-
-
 
     isnothing(rw_end) && (pars_iter=eachrow(pars)[rw_start:end])
     (!isnothing(rw_end)) && (pars_iter=eachrow(pars)[rw_start:rw_end])
@@ -620,7 +609,138 @@ function obs_dists(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         end
         ##Save the trait data
         data_tag = string(i)*"_"*string(j)
-        CSV.write("fits/rho_vcv_dists_"*data_tag*".csv",dat_dists)
+        CSV.write(folder_path*"/obs/fits/rho_vcv_dists_"*data_tag*".csv",dat_dists)
     end
 
 end
+
+
+function mat_dists(net_loc,true_mod)
+
+    include(net_loc*"/common_net.jl")
+    include("./common_pars.jl")
+
+    function compute_dist(S1,S2)
+        @rput(S1,S2)
+        R"vcv_dist <- relative.eigen(S1=S1, S2=S2)$distCov"
+        @rget(vcv_dist)
+        return vcv_dist
+    end
+
+    pars=CSV.read(net_loc*"/"*true_mod*"/pars.csv",DataFrame)
+
+    if true_mod == "bas"
+
+        ##Make data frame for storing results
+        dat_dists= DataFrame(i = Int64[], gamma=Float64[], model=String[],dist=Float64[])
+
+        for (i,gamma,seed) in eachrow(pars)
+            println(i," gamma")
+        
+            ###Set gamma values
+            major_hyb_edges = net.edge[(x->(x.isMajor & x.hybrid)).(net.edge)]
+            (x->setGamma!(x,gamma)).(major_hyb_edges)
+
+            ##Bastide model
+            bas_vcv = vcv(net)
+
+            ##Major Tree model
+            V2 = vcv(majorTree(net))
+            push!(dat_dists,[i,gamma,"maj",compute_dist(bas_vcv,V2)])
+
+            ##Min pop size model
+            s_p_min = (PhyloNetworks.parentTreeProbs(net; pop=0.000000000001)) ##should be zero but this causes some type funkiness. Results are effectively the same, however
+            V2 = PhyloNetworks.vcvParent3(net,s_p_min)
+            push!(dat_dists,[i,gamma,"min",compute_dist(bas_vcv,V2)])
+
+            ##Max pop size model
+            s_p_max = (PhyloNetworks.parentTreeProbs(net; pop=Inf))
+            V2 = PhyloNetworks.vcvParent3(net,s_p_max)
+            push!(dat_dists,[i,gamma,"maj",compute_dist(bas_vcv,V2)])
+
+            ##unscaled pop model
+            s_p_uns = (PhyloNetworks.parentTreeProbs(net; pop=10))
+            V2 = PhyloNetworks.vcvParent3(net,s_p_uns)
+            push!(dat_dists,[i,gamma,"uns",compute_dist(bas_vcv,V2)])
+        end
+    end
+
+    if true_mod == "exp"
+
+        ##Make data frame for storing results
+        dat_dists= DataFrame(i = Int64[],j=Int64[], gamma=Float64[], pop=Float64[], model=String[],dist=Float64[])
+
+        for (i,j,pop,gamma,seed) in eachrow(pars)
+            println(i," ",j)
+        
+            ###Set gamma values
+            major_hyb_edges = net.edge[(x->(x.isMajor & x.hybrid)).(net.edge)]
+            (x->setGamma!(x,gamma)).(major_hyb_edges)
+
+            ##True model
+            s_p = (PhyloNetworks.parentTreeProbs(net; pop=pop)) ##should be zero but this causes some type funkiness. Results are effectively the same, however
+            exp_vcv = PhyloNetworks.vcvParent3(net,s_p)
+
+            ##Bastide model
+            V2 = vcv(net)
+            push!(dat_dists,[i,j,gamma,pop,"maj",compute_dist(exp_vcv,V2)])
+
+            ##Major Tree model
+            V2 = vcv(majorTree(net))
+            push!(dat_dists,[i,j,gamma,pop,"maj",compute_dist(exp_vcv,V2)])
+
+            ##Min pop size model
+            s_p_min = (PhyloNetworks.parentTreeProbs(net; pop=0.000000000001)) ##should be zero but this causes some type funkiness. Results are effectively the same, however
+            V2 = PhyloNetworks.vcvParent3(net,s_p_min)
+            push!(dat_dists,[i,j,gamma,pop,"maj",compute_dist(exp_vcv,V2)])
+
+            ##Max pop size model
+            s_p_max = (PhyloNetworks.parentTreeProbs(net; pop=Inf))
+            V2 = PhyloNetworks.vcvParent3(net,s_p_max)
+            push!(dat_dists,[i,j,gamma,pop,"maj",compute_dist(exp_vcv,V2)])
+
+            ##unscaled pop model
+            s_p_uns = (PhyloNetworks.parentTreeProbs(net; pop=10))
+            V2 = PhyloNetworks.vcvParent3(net,s_p_uns)
+            push!(dat_dists,[i,j,gamma,pop,"maj",compute_dist(exp_vcv,V2)])
+        end
+    end
+
+
+
+
+
+
+    CSV.write(net_loc*"/"*true_mod*"/vcv_dists.csv",dat_dists)
+end
+
+
+
+function plot_mat(file_loc,file_name;gamma=0.5,pop=nothing,model)
+    
+    include(file_loc*"/common_net.jl")
+
+    preorder!(net)
+    tipnames=tipLabels(net)
+    ntips=length(net.leaf)
+
+    ###Set gamma values
+    major_hyb_edges = net.edge[(x->(x.isMajor & x.hybrid)).(net.edge)]
+    (x->setGamma!(x,gamma)).(major_hyb_edges)
+
+    if model=="exp"
+        sorts_n_props = PhyloNetworks.parentTreeProbs(net; pop=pop)
+        my_vcv= PhyloNetworks.vcvParent3(net,sorts_n_props)
+    elseif model == "maj"
+        my_vcv=vcv(majorTree(net))
+    elseif  model=="bas"
+        my_vcv=vcv(net)
+    end
+    @rput(my_vcv,tipnames,file_loc,file_name)
+    R"source('plot_fxns.R')"
+    R"matrix_plotting(my_vcv,tipnames,file_loc,file_name)"
+
+end
+
+
+
