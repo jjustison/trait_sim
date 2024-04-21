@@ -1,8 +1,11 @@
 
-summarize_data<-function(path,n_iters,models,true_mu=0,true_sig=3){
+summarize_data<-function(path,n_iters,models,true_mu=0,true_sig=3,par_rws=NULL){
   nmodels<-length(models)
   pars_name<-paste(path,'/pars.csv',sep = '')
   pars <- read.csv(file =pars_name)
+  if(!is.null(par_rws)){
+    pars<-pars[par_rws,]
+  }
   pars$seed<-NULL ##Save memory, ride a cowboy
   
 
@@ -72,6 +75,8 @@ oe_n_iters<-2
 bas_models<-c('bas','maj','max','min','uns')
 exp_models<-c('bas','exp','maj','max','min','uns')
 obs_models<-c('bas','exp','obs','maj','max','min','uns')
+hib_models<-c('bas','hib','exp','tru','maj','max','min','uns')
+hib_rws<-c(1:50,601:650,1201:1250)
 
 true_mu<-0
 true_sig<-3
@@ -81,16 +86,18 @@ true_sig<-3
 summarize_data(path="./8_tree1/bas",n_iters=b_n_iters, models = bas_models)
 summarize_data(path="./8_tree1/exp",n_iters=oe_n_iters,models = exp_models)
 summarize_data(path="./8_tree1/obs",n_iters=oe_n_iters,models = obs_models)
+summarize_data(path="./8_tree1/hib",n_iters=oe_n_iters,models = hib_models,par_rws = hib_rws)
 
 ###Summarize all tree2 sims
 summarize_data(path="./8_tree2/bas",n_iters=b_n_iters, models = bas_models)
 summarize_data(path="./8_tree2/exp",n_iters=oe_n_iters,models = exp_models)
 summarize_data(path="./8_tree2/obs",n_iters=oe_n_iters,models = obs_models)
+summarize_data(path="./8_tree2/hib",n_iters=oe_n_iters,models = hib_models,par_rws = hib_rws)
 
 ###Summarize all tree3 sims
 summarize_data(path="./8_tree3/bas",n_iters=b_n_iters, models = bas_models)
 summarize_data(path="./8_tree3/exp",n_iters=oe_n_iters,models = exp_models)
 summarize_data(path="./8_tree3/obs",n_iters=oe_n_iters,models = obs_models)
-
+summarize_data(path="./8_tree3/hib",n_iters=oe_n_iters,models = hib_models,par_rws = hib_rws)
 
 

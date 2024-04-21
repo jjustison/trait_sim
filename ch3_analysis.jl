@@ -6,6 +6,7 @@ using CSV
 using GLM
 using Random
 using RCall
+using PhyloPlots
 
 
 #cd("C:/Users/justison/Documents/chapt3/8_tree1")
@@ -27,7 +28,7 @@ using RCall
 
 function obs_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
 
-
+    ext="obs"
     include(folder_path*"/common_net.jl")
     include("./common_pars.jl")
 
@@ -171,7 +172,7 @@ end
 
 function bas_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
 
-
+    ext="bas"
     include(folder_path*"/common_net.jl")
     include("./common_pars.jl")
 
@@ -282,7 +283,7 @@ end
 #Random.seed!(8675309) ##Tree 2
 
 function exp_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
-    cd(folder_path)
+    ext="exp"
     include(folder_path*"/common_net.jl")
     include("./common_pars.jl")
     Random.seed!(starter_sd)
@@ -404,8 +405,9 @@ end
 #Random.seed!(546) ## tree2
 #Random.seed!(96030789) ###tree3
 
-function hib_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
-
+function hib_analysis(folder_path,starter_sd,inds=nothing)
+    global ext="hib"
+    global fldr = folder_path
     include(folder_path*"/common_net.jl")
     include("./common_pars.jl")
 
@@ -415,7 +417,7 @@ function hib_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
     no_pops=25
     pop_sizes=exp.(collect(range(log(0.001),log(1000),length=no_pops))) ### generate population sizes to range "evenly" from 0 to Inf
     #ngene_sizes = reduce(vcat,[1,(10:10:250)])
-    ngene_sizes = 1:50
+    ngene_sizes = 2:2:50
     nreps = 10000
     
     pars=DataFrame(
@@ -446,8 +448,11 @@ function hib_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
     s_p = (PhyloNetworks.parentTreeProbs(net; pop=1))
     uns_vcv = PhyloNetworks.vcvParent3(net,s_p)
 
-    isnothing(rw_end) && (pars_iter=eachrow(pars)[rw_start:end])
-    (!isnothing(rw_end)) && (pars_iter=eachrow(pars)[rw_start:rw_end])
+    pars_iter=eachrow(pars)
+    (!isnothing(inds)) && (pars_iter=pars_iter[inds])
+
+    ### Get the leaf gammas for hib model
+    leaf_gammas = (x->compute_leaf_gammas(net,x)).(sorts)
 
     for (i,j,pop,ngenes,seed) in pars_iter
         println(i," ",j)
@@ -483,7 +488,7 @@ function hib_analysis(folder_path,starter_sd,rw_start=1,rw_end=nothing)
         
 
             ##Call R script to generate gene trees and hibbins vcv
-            hib_vcv=outsouRcing(pop,ngenes,rep_s,gene_nomial)
+            hib_vcv=outsouRcing(pop,ngenes,rep_s,gene_nomial,leaf_gammas)
 
             ##Gernerate observed vcv
             obs_props = (gene_nomial)/ngenes
@@ -537,7 +542,8 @@ end
 
 ####Copied code from the obs_analysis function but eliminated superfulous code
 function obs_dists(folder_path,starter_sd,rw_start=1,rw_end=nothing)
-
+    global ext="obs"
+    global fldr = folder_path
 
     include(folder_path*"/common_net.jl")
     include("./common_pars.jl")
@@ -548,7 +554,7 @@ function obs_dists(folder_path,starter_sd,rw_start=1,rw_end=nothing)
     no_pops=25
     pop_sizes=exp.(collect(range(log(0.001),log(1000),length=no_pops))) ### generate population sizes to range "evenly" from 0 to Inf
     #ngene_sizes = reduce(vcat,[1,(10:10:250)])
-    ngene_sizes = 1:25
+    ngene_sizes = 1:50
     nreps = 10000
 
 
@@ -565,7 +571,7 @@ function obs_dists(folder_path,starter_sd,rw_start=1,rw_end=nothing)
     isnothing(rw_end) && (pars_iter=eachrow(pars)[rw_start:end])
     (!isnothing(rw_end)) && (pars_iter=eachrow(pars)[rw_start:rw_end])
 
-    for (i,j,pop,ngenes,seed) in pars_iter
+    for (i,j,pop,ngenes,seed) in pars_iter[[((collect.([1:50,601:650,1201:1250]))...)...]]
         println(i," ",j)
         
         ##Do population level things
@@ -616,7 +622,8 @@ end
 
 
 function mat_dists(net_loc,true_mod)
-
+    global ext=true_mod
+    global fldr = net_loc
     include(net_loc*"/common_net.jl")
     include("./common_pars.jl")
 
@@ -656,7 +663,7 @@ function mat_dists(net_loc,true_mod)
             ##Max pop size model
             s_p_max = (PhyloNetworks.parentTreeProbs(net; pop=Inf))
             V2 = PhyloNetworks.vcvParent3(net,s_p_max)
-            push!(dat_dists,[i,gamma,"maj",compute_dist(bas_vcv,V2)])
+            push!(dat_dists,[i,gamma,"max",compute_dist(bas_vcv,V2)])
 
             ##unscaled pop model
             s_p_uns = (PhyloNetworks.parentTreeProbs(net; pop=10))
@@ -683,7 +690,7 @@ function mat_dists(net_loc,true_mod)
 
             ##Bastide model
             V2 = vcv(net)
-            push!(dat_dists,[i,j,gamma,pop,"maj",compute_dist(exp_vcv,V2)])
+            push!(dat_dists,[i,j,gamma,pop,"bas",compute_dist(exp_vcv,V2)])
 
             ##Major Tree model
             V2 = vcv(majorTree(net))
@@ -692,17 +699,17 @@ function mat_dists(net_loc,true_mod)
             ##Min pop size model
             s_p_min = (PhyloNetworks.parentTreeProbs(net; pop=0.000000000001)) ##should be zero but this causes some type funkiness. Results are effectively the same, however
             V2 = PhyloNetworks.vcvParent3(net,s_p_min)
-            push!(dat_dists,[i,j,gamma,pop,"maj",compute_dist(exp_vcv,V2)])
+            push!(dat_dists,[i,j,gamma,pop,"min",compute_dist(exp_vcv,V2)])
 
             ##Max pop size model
             s_p_max = (PhyloNetworks.parentTreeProbs(net; pop=Inf))
             V2 = PhyloNetworks.vcvParent3(net,s_p_max)
-            push!(dat_dists,[i,j,gamma,pop,"maj",compute_dist(exp_vcv,V2)])
+            push!(dat_dists,[i,j,gamma,pop,"max",compute_dist(exp_vcv,V2)])
 
             ##unscaled pop model
-            s_p_uns = (PhyloNetworks.parentTreeProbs(net; pop=10))
+            s_p_uns = (PhyloNetworks.parentTreeProbs(net; pop=1))
             V2 = PhyloNetworks.vcvParent3(net,s_p_uns)
-            push!(dat_dists,[i,j,gamma,pop,"maj",compute_dist(exp_vcv,V2)])
+            push!(dat_dists,[i,j,gamma,pop,"uns",compute_dist(exp_vcv,V2)])
         end
     end
 
@@ -722,7 +729,6 @@ function plot_mat(file_loc,file_name;gamma=0.5,pop=nothing,model)
 
     preorder!(net)
     tipnames=tipLabels(net)
-    ntips=length(net.leaf)
 
     ###Set gamma values
     major_hyb_edges = net.edge[(x->(x.isMajor & x.hybrid)).(net.edge)]

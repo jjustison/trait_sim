@@ -12,19 +12,25 @@ for(pt_ind in 1:length(parent_trees)){
   while(completed_sims<num_genes){
     gene_tree<-generate_gene_tree_msc(
       pt,population_sizes = pop) ##All other parameters are assumed to be 1, what we want
-    
+    gt<-gene_tree$tree
     prob_sample<-1
-    
     for(l_gamma in leaf_gammas){
-      coal_time<-5-gene_tree$gene_clade_times[getMRCA(gene_tree$tree,l_gamma[[2]])]
-      if(coal_time>hyb_time){
-        prob_sample<-prob_sample*l_gamma[[1]]
+      tip_nos<-match(l_gamma[[2]],gt$tip.label)
+
+      tip_branches <- gt$edge.length[gt$edge[,2] %in% tip_nos]
+      coal_over<-tip_branches>hyb_time ##Branches that are longer than hyb time coalesce after the hybridization
+      gps<-0
+      if(all(coal_over)){
+        gps<-gps-1
       }
+      gps<-gps+sum(coal_over)
+      prob_sample<-prob_sample*(l_gamma[[1]]^gps)
     }
+    
     if(prob_sample!=1 & (runif(1)>=prob_sample)){ ##sample fails
       next
     }
-    gene_trees<-c(gene_trees,list(gene_tree$tree))
+    gene_trees<-c(gene_trees,list(gt))
     completed_sims<-completed_sims+1
   }
 }

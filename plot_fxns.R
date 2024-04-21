@@ -2,6 +2,7 @@ library(ggplot2)
 library(cowplot)
 library(tidyr)
 library(scales)
+library(xtable)
 
 
 
@@ -24,8 +25,8 @@ plot_single_all_mod <- function(file_ext,dat,file_name,
                                 ylims=NULL,
                                 log_transform=F,
                                 labs=F){
-  col_pal <- c('#CC6677','#332288','#DDCC77','#117733','#88CCEE','#44AA99','#999933','#AA4499')
-  all_models<-c('maj','bas','exp','obs','hib','min','max','uns')
+  col_pal <- c('#CC6677','#332288','#DDCC77','#117733','#88CCEE','#44AA99','#999933','#AA4499','#117733')
+  all_models<-c('maj','bas','exp','obs','hib','min','max','uns','tru')
   
   
   
@@ -93,9 +94,15 @@ plot_iter_all_single<- function(file_ext,dat,
   
   
   ##Make single plots for all iterations
+  ylims_orig<-ylims
   for(val in iter_vals){
     dat_subset<- dat[dat[,iter]==val,] ##Only grab the data that has val 
     iter_name <- dat_subset[1,which(colnames(dat)==iter)-2] ##match the value to the respective i/j numbering in the pars.csv
+    
+    if(!is.null(ylims_orig) && common_axis){
+      ylims<-unlist(ylims_orig[which(ylims_orig[,1]==val),c(2,3)])
+    }
+    
     
     iter_folder<-paste(iter_loc,'/',iter,'_',iter_name,sep='')
     dir.create(paste(file_ext,'/figs/',iter_folder,sep=''),showWarnings = F)
@@ -106,6 +113,7 @@ plot_iter_all_single<- function(file_ext,dat,
                         log_tranform)
     
   }
+  ylims<-ylims_orig
 }
 
 
@@ -148,7 +156,7 @@ make_model_legend <- function(dat,file_ext,simp=F){
   }else{
     file_nm<-paste(file_ext,'/figs/model_legend_simp.png',sep='')
   }
-  ggsave(fil_nm,width = 10,height = 10,dpi=600,device=png)
+  ggsave(file_nm,width = 10,height = 10,dpi=600,device=png)
   
 }
 
@@ -305,12 +313,111 @@ obs_plots<-function(tree_file,tree_exts,
     }
   }
   
-  if(simple_models){
-    obs_dat<-obs_dat[obs_dat$model %in% c('obs','exp'),]
+  for(ext in tree_exts){
+    file_ext<-paste(tree_file,ext,'/obs',sep='')
+    if(simple_models){
+      obs_dat<-obs_dat[obs_dat$model %in% c('obs','exp'),]
+    }
+    ##Make a dummy thicc legend plot
+    make_model_legend(obs_dat,file_ext,simp=simple_models)
+  }
+}
+
+
+##############################################
+####### Hib Model Plotting Function ##########
+##############################################
+
+hib_plots<-function(tree_file,tree_exts,
+                    common_y=T,common_axis=F,
+                    simple_models=F,
+                    log_transform=T){
+  
+  obs_dat<-read.csv(paste(tree_file,'1','/hib/compiled_data.csv',sep=''))
+  ##Get all columns that could be made into graphs
+  y_vals<-colnames(obs_dat[c(6:9,14:17)])
+  
+  pop_iter_vals<-unique(obs_dat$pop)
+  
+  iter<-'pop'
+  iter_ext<-paste(iter,"_iter",sep='')
+  
+  for(y in y_vals){
+    print(y)
+    f_name<-y
+    if(simple_models){
+      f_name<-paste(y,'_simp',sep='')
+    }
+    
+    ###read all the data if we want to find max and mins
+    ylims<-NULL
+    if(common_y){
+      mins<-c()
+      maxs<-c()
+      for(ext in tree_exts){
+        dat_file<-read.csv(paste(tree_file,ext,'/hib/compiled_data.csv',sep=''))
+        if(simple_models){
+          dat_file<-dat_file[dat_file$model %in% c('hib','tru'),]
+        }
+        mins<-c(mins,min(dat_file[,y]))
+        maxs<-c(maxs,max(dat_file[,y]))
+      }
+      ylims<-c(min(mins),max(maxs))
+    }
+    
+    ###Row maxes and ins
+    ###read all the data if we want to find max and mins
+    if(common_axis){
+      
+      iter_mins<-c()
+      iter_maxs<-c()
+      all_frame<-data.frame(matrix(NA,nrow=0,ncol=2))
+      colnames(all_frame)<-c("pop",y)
+      
+      ##combine the data frames for all tree topologies
+      for(ext in tree_exts){
+        dat_file<-read.csv(paste(tree_file,ext,'/hib/compiled_data.csv',sep=''))
+        if(simple_models){
+          dat_file<-dat_file[dat_file$model %in% c('hib','tru'),]
+        }
+        dat_file<-dat_file[,c(iter,y)]
+        all_frame<-rbind(all_frame,dat_file)
+      }
+      ##find the min and max for each iter
+      n_iters<-length(pop_iter_vals)
+      ylims<-data.frame(iter=rep(NA,n_iters),mins=rep(NA,n_iters),maxs=rep(NA,n_iters))
+      for(i in 1:n_iters){
+        it<-pop_iter_vals[i]
+        iter_y<-all_frame[all_frame[,iter]==it,y]
+        ylims[i,]<-c(it,min(iter_y),max(iter_y))
+      }
+    }
+    
+    for(ext in tree_exts){
+      file_ext<-paste(tree_file,ext,'/hib',sep='')
+      dir.create(paste(file_ext,'/figs/',iter_ext,sep = ''),showWarnings = F)
+      obs_dat<-read.csv(paste(file_ext,'/compiled_data.csv',sep=''))
+      if(simple_models){
+        obs_dat<-obs_dat[obs_dat$model %in% c('hib','tru'),]
+      }
+      plot_iter_all_single(file_ext = file_ext,iter_loc=iter_ext,
+                           dat=obs_dat,file_name=f_name,
+                           xvar='ngenes',yvar=y,
+                           iter=iter,iter_vals=pop_iter_vals,
+                           common_axis=common_axis,
+                           ylims = ylims,
+                           log_tranform = log_transform)
+    }
   }
   
-  ##Make a dummy thicc legend plot
-  make_model_legend(obs_dat,file_ext,simp=simple_models)
+  for(ext in tree_exts){
+    file_ext<-paste(tree_file,ext,'/hib',sep='')
+    if(simple_models){
+      obs_dat<-obs_dat[obs_dat$model %in% c('hib','tru'),]
+    }
+    ##Make a dummy thicc legend plot
+    make_model_legend(obs_dat,file_ext,simp=simple_models)
+  }
 }
 
 
@@ -319,7 +426,7 @@ obs_plots<-function(tree_file,tree_exts,
 ####### Matrix plotting function #######
 ########################################
 
-##Note: these are called from Julia and not here 
+##Note: this is called from Julia and not here 
 
 matrix_plotting <- function(mat, mat_names,
                             file_loc,file_name){
@@ -339,7 +446,6 @@ matrix_plotting <- function(mat, mat_names,
   mat2$Cov<-as.numeric(mat2$Cov)
   mat2$Cov[mat2$Cov==0]<-NA
   
-  
   ggplot(mat2, aes(x=xs, y=ys,fill=Cov)) +
     geom_tile() +
     geom_text(aes(label=Cov),size=0.36*25)+
@@ -351,6 +457,28 @@ matrix_plotting <- function(mat, mat_names,
           legend.text = element_text(size=15),
           legend.key.width = unit(0.1,'npc'))
   ggsave(paste(file_loc,'/',file_name,'.png',sep=''),width = 10,height = 10,dpi=600)
+}
+
+
+####################################
+###### Summary Table Function ######
+####################################
+
+make_table<- function(file_loc,idvar,
+                      drop.cols=NULL,
+                      idvar_subset=NULL,
+                      digits=NULL){
+  dat<-read.csv(file_loc)
+  if(!is.null(drop.cols)){
+    dat<-dat[,-drop.cols]
+  }
+  
+  dat_wide<-reshape(data=dat,idvar =idvar,timevar = 'model',direction = 'wide' )
+  if(!is.null(idvar_subset)){
+    dat_wide<-dat_wide[dat_wide[,idvar] %in% idvar_subset,]
+  }
+  rownames(dat_wide)<-NULL
+  print(xtable(dat_wide,digits=digits),include.rownames=FALSE)
 }
 
 

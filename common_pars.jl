@@ -14,7 +14,7 @@ ref_hyb_sorts = PhyloNetworks.parentTreeProbs(net; pop=1) ##Get the hybrid sorti
 ref_hyb_sorts = (x-> x[2]).(ref_hyb_sorts)
 
 sorted_pts = (x->pt_dict[x]).(ref_hyb_sorts) ##Parent trees in the correct ordering
-writeMultiTopology(sorted_pts,"parent_trees.net")
+writeMultiTopology(sorted_pts,fldr*"/"*ext*"/parent_trees.net")
 
 ##get dummy array of the hyb_sortings
 sorts = (x -> x[2]).(PhyloNetworks.parentTreeProbs(net; pop=1))
@@ -27,7 +27,7 @@ sorts = (x -> x[2]).(PhyloNetworks.parentTreeProbs(net; pop=1))
 include("./leaf_gammas.jl")
 pt_leaf_gammas=(x-> compute_leaf_gammas(net,x)).(ref_hyb_sorts)
 @rput(pt_leaf_gammas,ntips,hyb_time,tipnames)
-R"source('../../outsouRcing_prep.R')"
+R"source('./outsouRcing_prep.R')"
 
 
 ###Trait evolution params

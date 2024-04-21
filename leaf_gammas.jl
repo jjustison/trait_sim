@@ -31,7 +31,7 @@ function outsouRcing(pop,ngenes,rep_s,gene_nomial,pt_leaf_gammas=nothing)
 
     @rput(pop,ngenes,R_seed,gene_nomial)
     (!isnothing(pt_leaf_gammas)) && @rput(pt_leaf_gammas)
-    R"source('../../baba.R')"
+    R"source('./baba.R')"
     Random.seed!(rep_s)
     @rget(hib_vcv)
 
